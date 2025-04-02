@@ -533,7 +533,7 @@ def main(script_args, training_args, model_args):
     else:
         accu_reward_methods = script_args.reward_method.split(":")
         assert len(accu_reward_methods) == len(data_files), f"Number of reward methods must match number of data files: {len(accu_reward_methods)} != {len(data_files)}"
-    # 之后务必要改
+    # TODO 之后务必要改
     accu_reward_methods = ["yes_no"] * len(data_files)
     
     if len(data_files) != len(image_folders):
