@@ -317,7 +317,7 @@ class VLMGRPOTrainer(Trainer):
         self.vlm_module.post_model_init(model, processing_class)
         self.vlm_module.post_model_init(self.ref_model, processing_class)
 
-        # Reward functions
+        # Reward functions 函数形式
         if not isinstance(reward_funcs, list):
             reward_funcs = [reward_funcs]
         for i, reward_func in enumerate(reward_funcs):
@@ -510,6 +510,8 @@ class VLMGRPOTrainer(Trainer):
     def _generate_and_score_completions(self, inputs: dict[str, Union[torch.Tensor, Any]], model) -> dict[str, Union[torch.Tensor, Any]]:
         device = self.accelerator.device
         prompts = [x["prompt"] for x in inputs]
+        labels = [x['solution'].replace('<answer>', '').replace('</answer>', '').strip() for x in inputs]
+        images = [x['image_path'] for x in inputs]
         prompts_text = self.vlm_module.prepare_prompt(self.processing_class, inputs)
         # Handle both pre-loaded images and image paths
         images = []
@@ -532,6 +534,7 @@ class VLMGRPOTrainer(Trainer):
                             new_h = 28
                             new_w = int(w * (28/h))
                     img = img.resize((new_w, new_h), PIL.Image.Resampling.LANCZOS)
+                # 图像都调整成长边560 ，保持原比例
                 except:
                     max_size = 560
                     width, height = img.size
@@ -539,7 +542,6 @@ class VLMGRPOTrainer(Trainer):
                     resized_width = int(width * size_ratio)
                     resized_height = int(height * size_ratio)
                     img = img.resize((resized_width, resized_height),PIL.Image.Resampling.LANCZOS)
-                print(img.size,"-------------")
                 images.append(img)
                 
 
@@ -679,8 +681,20 @@ class VLMGRPOTrainer(Trainer):
         # Log the metrics
         completion_length = self.accelerator.gather_for_metrics(completion_mask.sum(1)).float().mean().item()
         self._metrics["completion_length"].append(completion_length)
-
+        # TODO ：参数传递 
+        # TODO ：目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
+        label_flag = all("yes" in label.lower() for label in labels)
+        c = 0.031
+        gamma = 2
+        alpha = 0.056
+        c = c if not label_flag else 1-c 
+        alpha_t = alpha if not label_flag else 1-alpha
+        # 计算第一列的均值
+        mean_value = rewards_per_func[:, 0].mean()
+        rewards_per_func[:, 0] =  rewards_per_func[:, 0] + rewards_per_func[:, 0] * alpha_t * (1-mean_value) ** gamma / c
+        print("reward_per_func -- gather_for_metrics : " , rewards_per_func)
         reward_per_func = self.accelerator.gather_for_metrics(rewards_per_func).mean(0)
+        
         for i, reward_func in enumerate(self.reward_funcs):
             if isinstance(reward_func, PreTrainedModel):
                 reward_func_name = reward_func.config._name_or_path.split("/")[-1]

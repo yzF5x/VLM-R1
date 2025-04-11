@@ -127,7 +127,7 @@ class GRPOScriptArguments(ScriptArguments):
     reward_method: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Choose reward method: 'default', 'mcp', ..."
+            "help": "Choose acc reward method: 'default', 'mcp', ..."
         },
     )
 
@@ -247,8 +247,7 @@ def yes_no_reward(content, sol, **kwargs):
     student_yes_no = student_yes_no.group(1) if student_yes_no else ''
 
     reward = 1.0 if ground_yes_no == student_yes_no else 0.0
-
-    return reward
+    return  reward
 
 def calculate_map(pred_bbox_list, gt_bbox_list):
     # Calculate mAP
@@ -446,7 +445,6 @@ def accuracy_reward(completions, solution, **kwargs):
         else:
             reward = default_accuracy_reward(content, sol)  
         rewards.append(reward)
-        
         if os.getenv("DEBUG_MODE") == "true":
             log_path = os.getenv("LOG_PATH")
             current_time = datetime.now().strftime("%d-%H-%M-%S-%f")
@@ -461,7 +459,7 @@ def accuracy_reward(completions, solution, **kwargs):
                     f.write(f"Content: {content}\n")
                     f.write(f"Solution: {sol}\n")     
 
-        
+    print(f"accuracy rewards : \n {rewards}\n")
     return rewards
 
 
@@ -480,13 +478,18 @@ def format_reward(completions, **kwargs):
                 f.write(f"Content: {content}\n")
                 f.write(f"Has format: {bool(match)}\n")
 
-    return [1.0 if match else 0.0 for match in matches]
+    return [0.5 if match else 0.0 for match in matches]
 
 
 reward_funcs_registry = {
     "accuracy": accuracy_reward,
     "format": format_reward,
 }
+
+# reward_funcs_registry = {
+#     "accuracy": focal_loss_acc_reward,
+#     "format": format_reward,
+# }
 
 @dataclass
 class GRPOModelConfig(ModelConfig):
@@ -534,7 +537,7 @@ def main(script_args, training_args, model_args):
         accu_reward_methods = script_args.reward_method.split(":")
         assert len(accu_reward_methods) == len(data_files), f"Number of reward methods must match number of data files: {len(accu_reward_methods)} != {len(data_files)}"
     # TODO 之后务必要改
-    accu_reward_methods = ["yes_no"] * len(data_files)
+    # accu_reward_methods = ["yes_no"] * len(data_files)
     
     if len(data_files) != len(image_folders):
         raise ValueError("Number of data files must match number of image folders")
@@ -567,7 +570,9 @@ def main(script_args, training_args, model_args):
                     item['solution'] = str(solution_value)
                 
                 del item['conversations']
-                item['accu_reward_method'] = item.get('accu_reward_method', accu_reward_method) # if accu_reward_method is in the data jsonl, use the value in the data jsonl, otherwise use the defined value
+                
+                # if accu_reward_method is in the data jsonl, use the value in the data jsonl, otherwise use the defined value
+                item['accu_reward_method'] = item.get('accu_reward_method', accu_reward_method) 
                 all_data.append(item)
 
     dataset = Dataset.from_list(all_data)

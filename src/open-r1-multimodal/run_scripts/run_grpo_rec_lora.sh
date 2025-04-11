@@ -1,15 +1,15 @@
 cd src/open-r1-multimodal
-
+CUDA_VISIBLE_DEVICES=2,3
 export DEBUG_MODE="true"
 export WANDB_API_KEY=597622c60547b5e27fc630707414ef3ec6688986
-RUN_NAME="Qwen2.5-VL-7B-GRPO-v2.1-loco-lora"
+RUN_NAME="Qwen2.5-VL-7B-GRPO-v1.0-MVTecAD"
 export LOG_PATH="./debug_log_$RUN_NAME.txt"
 
-torchrun --nproc_per_node="4" \
+torchrun --nproc_per_node="2" \
     --nnodes="1" \
     --node_rank="0" \
     --master_addr="127.0.0.1" \
-    --master_port="12349" \
+    --master_port="12350" \
     src/open_r1/grpo_jsonl.py \
     --deepspeed local_scripts/zero3.json \
     --output_dir output/$RUN_NAME \
@@ -19,8 +19,9 @@ torchrun --nproc_per_node="4" \
     --image_folders /gpfsdata/home/yizhou/Project/AnomalyDetection/Datasets/mvtec_loco_anomaly_detection \
     --max_prompt_length 1024 \
     --num_generations 4 \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 1 \
+    --reward_method yes_no \
     --logging_steps 1 \
     --bf16 \
     --torch_dtype bfloat16 \
@@ -39,6 +40,3 @@ torchrun --nproc_per_node="4" \
     --lora_dropout 0.05 \
     --lora_task_type CAUSAL_LM \
     --freeze_vision_modules true
-
-
-# grpo_jsonl 536行 记得改
