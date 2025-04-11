@@ -351,7 +351,11 @@ class VLMGRPOTrainer(Trainer):
         # Data collator
         def data_collator(features):  # No data collation is needed in GRPO
             return features
-
+        # Focal-loss arguments
+        self.is_focalloss = args.is_focalloss
+        self.gamma = args.gamma
+        self.alpha = args.alpha
+        self.normalized_c = args.normalized_c
         # Training arguments
         self.max_prompt_length = args.max_prompt_length
         self.max_prompt_length = None
@@ -657,7 +661,16 @@ class VLMGRPOTrainer(Trainer):
 
         # Gather rewards across processes
         rewards_per_func = self.accelerator.gather(rewards_per_func)
-        
+        # TODO ：目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
+        if self.is_focalloss:
+            print(f"normalized_c : {self.normalized_c} , alpha : {self.alpha} , gamma : {self.gamma}\n")
+            label_flag = all("yes" in label.lower() for label in labels)
+            c = self.normalized_c if not label_flag else 1-self.normalized_c
+            alpha_t = self.alpha if not label_flag else 1-self.alpha
+            # 计算第一列的均值
+            mean_value = rewards_per_func[:, 0].mean()
+            rewards_per_func[:, 0] =  rewards_per_func[:, 0] + rewards_per_func[:, 0] * alpha_t * (1-mean_value) ** self.gamma / c
+            print("reward_per_func  : \n" , rewards_per_func)
         # Sum the rewards from all reward functions
         rewards = rewards_per_func.sum(dim=1)
         
@@ -665,7 +678,7 @@ class VLMGRPOTrainer(Trainer):
         # Each group consists of num_generations completions for the same prompt
         mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
-        
+        print(f"mean_grouped_rewards : {mean_grouped_rewards} \n")
         # Normalize the rewards to compute the advantages
         mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
         std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
@@ -681,18 +694,6 @@ class VLMGRPOTrainer(Trainer):
         # Log the metrics
         completion_length = self.accelerator.gather_for_metrics(completion_mask.sum(1)).float().mean().item()
         self._metrics["completion_length"].append(completion_length)
-        # TODO ：参数传递 
-        # TODO ：目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
-        label_flag = all("yes" in label.lower() for label in labels)
-        c = 0.031
-        gamma = 2
-        alpha = 0.056
-        c = c if not label_flag else 1-c 
-        alpha_t = alpha if not label_flag else 1-alpha
-        # 计算第一列的均值
-        mean_value = rewards_per_func[:, 0].mean()
-        rewards_per_func[:, 0] =  rewards_per_func[:, 0] + rewards_per_func[:, 0] * alpha_t * (1-mean_value) ** gamma / c
-        print("reward_per_func -- gather_for_metrics : " , rewards_per_func)
         reward_per_func = self.accelerator.gather_for_metrics(rewards_per_func).mean(0)
         
         for i, reward_func in enumerate(self.reward_funcs):

@@ -7,5 +7,4 @@
     c = 0.031
     gamma = 2
     alpha = 0.056
-#### TODO：
 · 将focal-loss的参数写进脚本

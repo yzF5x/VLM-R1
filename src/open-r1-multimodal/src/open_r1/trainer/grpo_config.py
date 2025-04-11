@@ -284,3 +284,29 @@ class GRPOConfig(TrainingArguments):
             "installed, it prints the sample. If `wandb` logging is enabled, it logs it to `wandb`."
         },
     )
+    
+    # Parameters that control focal-loss
+    is_focalloss: bool = field(
+        default=False,
+        metadata={
+            "help": " "
+        },
+    )
+    gamma: float = field(
+        default=2.0,
+        metadata={
+            "help": " "
+        },
+    )
+    alpha: float = field(
+        default=0.2,
+        metadata={
+            "help": " "
+        },
+    )
+    normalized_c: float = field(
+        default=0.1,
+        metadata={
+            "help": " "
+        },
+    )
