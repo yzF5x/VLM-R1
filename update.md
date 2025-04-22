@@ -1,7 +1,6 @@
 ## 更新日志
 ### 4.11
 #### 更新内容
-· format reward调整到0.5
 · 增加focal-loss ，目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
 · 使用focal-loss对v2.1进行训练，目前的参数：
     c = 0.031

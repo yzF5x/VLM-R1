@@ -478,7 +478,7 @@ def format_reward(completions, **kwargs):
                 f.write(f"Content: {content}\n")
                 f.write(f"Has format: {bool(match)}\n")
 
-    return [0.5 if match else 0.0 for match in matches]
+    return [1.0 if match else 0.0 for match in matches]
 
 
 reward_funcs_registry = {

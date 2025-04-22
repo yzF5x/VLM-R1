@@ -2,7 +2,7 @@ cd src/open-r1-multimodal
 CUDA_VISIBLE_DEVICES=2,3
 export DEBUG_MODE="true"
 export WANDB_API_KEY=597622c60547b5e27fc630707414ef3ec6688986
-RUN_NAME="Qwen2.5-VL-7B-GRPO-v1.0-MVTecAD-lora"
+RUN_NAME="Qwen2.5-VL-7B-GRPO-v1.0-MVTecAD-lora-411"
 export LOG_PATH="./debug_log_$RUN_NAME.txt"
 
 torchrun --nproc_per_node="2" \

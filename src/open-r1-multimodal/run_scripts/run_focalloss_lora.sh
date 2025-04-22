@@ -2,7 +2,7 @@ cd src/open-r1-multimodal
 CUDA_VISIBLE_DEVICES=0,1
 export DEBUG_MODE="true"
 export WANDB_API_KEY=597622c60547b5e27fc630707414ef3ec6688986
-RUN_NAME="Qwen2.5-VL-7B-GRPO-v2.1-LOCO-focalloss_v1-lora"
+RUN_NAME="Qwen2.5-VL-7B-GRPO-v2.1-LOCO-focalloss_414-lora"
 export LOG_PATH="./debug_log_$RUN_NAME.txt"
 
 torchrun --nproc_per_node="2" \
@@ -15,7 +15,7 @@ torchrun --nproc_per_node="2" \
     --output_dir output/$RUN_NAME \
     --model_name_or_path Qwen/Qwen2.5-VL-7B-Instruct \
     --dataset_name loco \
-    --data_file_paths data_jsonl/train_r1_loco_v2.1.jsonl \
+    --data_file_paths data_jsonl/v2.1_train_loco.jsonl \
     --image_folders /gpfsdata/home/yizhou/Project/AnomalyDetection/Datasets/mvtec_loco_anomaly_detection \
     --is_focalloss True \
     --gamma 2.0 \
