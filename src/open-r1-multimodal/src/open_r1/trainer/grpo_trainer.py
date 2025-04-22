@@ -664,10 +664,11 @@ class VLMGRPOTrainer(Trainer):
         # TODO ：目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
         if self.is_focalloss:
             print(f"normalized_c : {self.normalized_c} , alpha : {self.alpha} , gamma : {self.gamma}\n")
+            # 判断是正例还是反例（仅针对标准判断数据集：yes代表正例）
             label_flag = all("yes" in label.lower() for label in labels)
             c = self.normalized_c if not label_flag else 1-self.normalized_c
             alpha_t = self.alpha if not label_flag else 1-self.alpha
-            # 计算第一列的均值
+            # 计算第一列的均值,即acc reward的均值
             mean_value = rewards_per_func[:, 0].mean()
             rewards_per_func[:, 0] =  rewards_per_func[:, 0] + rewards_per_func[:, 0] * alpha_t * (1-mean_value) ** self.gamma / c
             print("reward_per_func  : \n" , rewards_per_func)
@@ -678,7 +679,7 @@ class VLMGRPOTrainer(Trainer):
         # Each group consists of num_generations completions for the same prompt
         mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
-        print(f"mean_grouped_rewards : {mean_grouped_rewards} \n")
+        # print(f"mean_grouped_rewards : {mean_grouped_rewards} \n")
         # Normalize the rewards to compute the advantages
         mean_grouped_rewards = mean_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
         std_grouped_rewards = std_grouped_rewards.repeat_interleave(self.num_generations, dim=0)
