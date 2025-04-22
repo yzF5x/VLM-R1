@@ -356,6 +356,7 @@ class VLMGRPOTrainer(Trainer):
         self.gamma = args.gamma
         self.alpha = args.alpha
         self.normalized_c = args.normalized_c
+        self.positive_word = args.positive_word
         # Training arguments
         self.max_prompt_length = args.max_prompt_length
         self.max_prompt_length = None
@@ -664,8 +665,8 @@ class VLMGRPOTrainer(Trainer):
         # TODO ：目前只适用于 nproc-per-node * per_device_train_batch_size % num_generation == 0的情况
         if self.is_focalloss:
             print(f"normalized_c : {self.normalized_c} , alpha : {self.alpha} , gamma : {self.gamma}\n")
-            # 判断是正例还是反例（仅针对标准判断数据集：yes代表正例）
-            label_flag = all("yes" in label.lower() for label in labels)
+            # 判断是正例还是反例，可以通过positive_word参数设置
+            label_flag = all(self.positive_word in label.lower() for label in labels)
             c = self.normalized_c if not label_flag else 1-self.normalized_c
             alpha_t = self.alpha if not label_flag else 1-self.alpha
             # 计算第一列的均值,即acc reward的均值

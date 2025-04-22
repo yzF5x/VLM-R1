@@ -2,7 +2,7 @@ cd src/open-r1-multimodal
 CUDA_VISIBLE_DEVICES=0,1
 export DEBUG_MODE="true"
 export WANDB_API_KEY=597622c60547b5e27fc630707414ef3ec6688986
-RUN_NAME="Qwen2.5-VL-7B-GRPO-v2.1-LOCO-focalloss_414-lora"
+RUN_NAME="Qwen2.5-VL-7B-GRPO-v2.1-LOCO-focalloss"
 export LOG_PATH="./debug_log_$RUN_NAME.txt"
 
 torchrun --nproc_per_node="2" \
@@ -21,6 +21,7 @@ torchrun --nproc_per_node="2" \
     --gamma 2.0 \
     --alpha 0.056 \
     --normalized_c 0.031 \
+    --positive_word yes \
     --max_prompt_length 1024 \
     --num_generations 4 \
     --per_device_train_batch_size 2 \

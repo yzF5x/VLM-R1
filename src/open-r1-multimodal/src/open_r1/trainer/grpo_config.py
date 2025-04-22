@@ -310,3 +310,10 @@ class GRPOConfig(TrainingArguments):
             "help": " "
         },
     )
+    positive_word: str = field(
+        default="yes",
+        metadata={
+            "help": "a word that positive example must exist."
+        },
+    )
+    
